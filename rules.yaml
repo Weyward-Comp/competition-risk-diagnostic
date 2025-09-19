@@ -1,0 +1,656 @@
+# =========================
+# Sports Competition Risk Diagnostic — Neutral Question Set
+# =========================
+
+# 1) Entity type (engine ensures this appears first even if omitted)
+- id: entityType
+  domain: Meta
+  question: Which best describes your organisation?
+  kind: singleSelect
+  options:
+    - { text: "International Federation", points: 0 }
+    - { text: "National Federation", points: 0 }
+    - { text: "League Operator", points: 0 }
+    - { text: "Club / Team", points: 0 }
+    - { text: "Event Owner / Promoter", points: 0 }
+    - { text: "Players' Union", points: 0 }
+    - { text: "Athlete / Agent", points: 0 }
+    - { text: "Refereeing Body", points: 0 }
+    - { text: "Academy / Training Centre", points: 0 }
+    - { text: "Venue / Stadium Operator", points: 0 }
+    - { text: "Data / Analytics Provider", points: 0 }
+    - { text: "Ticketing / Hospitality", points: 0 }
+    - { text: "Betting / Integrity Partner", points: 0 }
+    - { text: "Broadcast / Media / OTT", points: 0 }
+    - { text: "Sponsorship / Marketing Agency", points: 0 }
+    - { text: "Merchandising / Licensing", points: 0 }
+    - { text: "Technology Platform", points: 0 }
+    - { text: "Esports Organisation", points: 0 }
+  appliesTo: all
+
+# -------------------------
+# 2) Common baseline (everyone)
+# -------------------------
+- id: setsParticipationRules
+  domain: Participation & Access
+  question: Does your organisation set rules that affect who can take part in competitions or events?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 6 }
+    - { text: "No", points: 0 }
+  appliesTo: all
+  next:
+    - when:
+        equals: { questionId: setsParticipationRules, value: "Yes" }
+      targetId: publishesCriteria
+
+- id: publishesCriteria
+  domain: Participation & Access
+  question: Are the criteria for those participation decisions publicly available?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "No", points: 4 }
+  appliesTo: all
+  showIf:
+    equals: { questionId: setsParticipationRules, value: "Yes" }
+
+- id: jointCommercialDecisions
+  domain: Commercial Decisions
+  question: Are important commercial decisions (such as selling media, data, or sponsorship) made together with other organisations?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 6 }
+    - { text: "No", points: 0 }
+  appliesTo: all
+
+- id: exclusiveAgreements
+  domain: Contracts
+  question: Do you enter agreements that require one party to work only with your organisation for a period of time?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 5 }
+    - { text: "No", points: 0 }
+  appliesTo: all
+  next:
+    - when:
+        equals: { questionId: exclusiveAgreements, value: "Yes" }
+      targetId: exclusivityDetails
+
+- id: exclusivityDetails
+  domain: Contracts
+  question: If exclusive agreements are used, are there limits on the length or scope of those agreements?
+  kind: singleSelect
+  options:
+    - { text: "Yes, there are clear limits", points: 0 }
+    - { text: "Sometimes, limits vary", points: 2 }
+    - { text: "No, not usually", points: 5 }
+  appliesTo: all
+  showIf:
+    equals: { questionId: exclusiveAgreements, value: "Yes" }
+
+# -------------------------
+# 3) International & National Federations
+# -------------------------
+- id: fedRegulatorySeparation
+  domain: Governance
+  question: Are decisions about regulation handled separately from your commercial activities?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "No", points: 7 }
+  appliesTo: [International Federation, National Federation]
+  next:
+    - when:
+        equals: { questionId: fedRegulatorySeparation, value: "No" }
+      targetId: fedMitigations
+
+- id: fedMitigations
+  domain: Governance
+  question: If there is no separation, which measures are in place?
+  kind: multiSelect
+  options:
+    - { text: "Independent committees for regulatory decisions", points: -3 }
+    - { text: "Published criteria and reasons for decisions", points: -2 }
+    - { text: "Independent route to review or appeal", points: -3 }
+    - { text: "None of these", points: 4 }
+  appliesTo: [International Federation, National Federation]
+  showIf:
+    equals: { questionId: fedRegulatorySeparation, value: "No" }
+
+- id: fedAuthorisesEvents
+  domain: Participation & Access
+  question: Does your organisation authorise events or athlete participation run by other organisers?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 5 }
+    - { text: "No", points: 0 }
+  appliesTo: [International Federation, National Federation]
+  next:
+    - when:
+        equals: { questionId: fedAuthorisesEvents, value: "Yes" }
+      targetId: fedAuthorisationCriteria
+
+- id: fedAuthorisationCriteria
+  domain: Participation & Access
+  question: If authorisation is required, are the criteria and timelines published in advance?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Partly", points: 2 }
+    - { text: "No", points: 5 }
+  appliesTo: [International Federation, National Federation]
+  showIf:
+    equals: { questionId: fedAuthorisesEvents, value: "Yes" }
+
+- id: fedRightsSalesModel
+  domain: Media & Data Rights
+  question: How are media or data rights sold for competitions you oversee?
+  kind: singleSelect
+  options:
+    - { text: "Sold by the federation", points: 6 }
+    - { text: "Sold by each organiser or club", points: 0 }
+    - { text: "A mix of both approaches", points: 3 }
+  appliesTo: [International Federation, National Federation]
+  next:
+    - when:
+        any:
+          - equals: { questionId: fedRightsSalesModel, value: "Sold by the federation" }
+          - equals: { questionId: fedRightsSalesModel, value: "A mix of both approaches" }
+      targetId: fedApprovalForJointSales
+
+- id: fedApprovalForJointSales
+  domain: Media & Data Rights
+  question: If rights are sold together, is there any formal approval or authorisation in place?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "In progress", points: 2 }
+    - { text: "No", points: 6 }
+  appliesTo: [International Federation, National Federation]
+  showIf:
+    any:
+      - equals: { questionId: fedRightsSalesModel, value: "Sold by the federation" }
+      - equals: { questionId: fedRightsSalesModel, value: "A mix of both approaches" }
+
+# -------------------------
+# 4) League Operators
+# -------------------------
+- id: leagueRegulatorySeparation
+  domain: Governance
+  question: Are regulatory matters handled separately from the league’s commercial activities?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "No", points: 7 }
+  appliesTo: [League Operator]
+  next:
+    - when:
+        equals: { questionId: leagueRegulatorySeparation, value: "No" }
+      targetId: leagueMitigations
+
+- id: leagueMitigations
+  domain: Governance
+  question: If there is no separation, which measures are in place?
+  kind: multiSelect
+  options:
+    - { text: "Independent committees for regulatory decisions", points: -3 }
+    - { text: "Published criteria and reasons for decisions", points: -2 }
+    - { text: "Independent route to review or appeal", points: -3 }
+    - { text: "None of these", points: 4 }
+  appliesTo: [League Operator]
+  showIf:
+    equals: { questionId: leagueRegulatorySeparation, value: "No" }
+
+- id: leagueRightsSalesModel
+  domain: Media & Data Rights
+  question: How are the league’s media or data rights sold?
+  kind: singleSelect
+  options:
+    - { text: "Sold by the league", points: 6 }
+    - { text: "Sold by each club", points: 0 }
+    - { text: "A mix of both approaches", points: 3 }
+  appliesTo: [League Operator]
+  next:
+    - when:
+        any:
+          - equals: { questionId: leagueRightsSalesModel, value: "Sold by the league" }
+          - equals: { questionId: leagueRightsSalesModel, value: "A mix of both approaches" }
+      targetId: leagueApprovalForJointSales
+
+- id: leagueApprovalForJointSales
+  domain: Media & Data Rights
+  question: If rights are sold together, is there any formal approval or authorisation in place?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "In progress", points: 2 }
+    - { text: "No", points: 6 }
+  appliesTo: [League Operator]
+  showIf:
+    any:
+      - equals: { questionId: leagueRightsSalesModel, value: "Sold by the league" }
+      - equals: { questionId: leagueRightsSalesModel, value: "A mix of both approaches" }
+
+- id: leaguePlayerPayRules
+  domain: People & Mobility
+  question: Are there league rules that affect player pay, transfers, or movement between clubs?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 6 }
+    - { text: "No", points: 0 }
+  appliesTo: [League Operator]
+
+- id: leagueDataCollection
+  domain: Data & In-Venue Access
+  question: During matches, is live data collection at the venue limited to certain suppliers?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 5 }
+    - { text: "No", points: 0 }
+  appliesTo: [League Operator]
+  next:
+    - when:
+        equals: { questionId: leagueDataCollection, value: "Yes" }
+      targetId: leagueAltDataAccess
+
+- id: leagueAltDataAccess
+  domain: Data & In-Venue Access
+  question: If access is limited, is there a way for others to request access on clear terms?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Sometimes", points: 2 }
+    - { text: "No", points: 5 }
+  appliesTo: [League Operator]
+  showIf:
+    equals: { questionId: leagueDataCollection, value: "Yes" }
+
+# -------------------------
+# 5) Clubs / Teams
+# -------------------------
+- id: clubExclusiveDeals
+  domain: Contracts
+  question: Do you use exclusive agreements with broadcasters, sponsors, data firms, or ticketing platforms?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 5 }
+    - { text: "No", points: 0 }
+  appliesTo: [Club / Team]
+
+- id: clubCoordinationOnPlayers
+  domain: People & Mobility
+  question: Have you ever agreed with other clubs on limits related to player recruitment, transfers, or pay?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 7 }
+    - { text: "No", points: 0 }
+  appliesTo: [Club / Team]
+
+- id: clubTicketingResale
+  domain: Fans & Ticketing
+  question: Are there limits on supporters’ ability to resell or transfer tickets?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 4 }
+    - { text: "No", points: 0 }
+  appliesTo: [Club / Team]
+
+# -------------------------
+# 6) Event Owners / Promoters
+# -------------------------
+- id: eventEntryCriteria
+  domain: Participation & Access
+  question: Do you set entry criteria for teams or athletes for your events?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 4 }
+    - { text: "No", points: 0 }
+  appliesTo: [Event Owner / Promoter]
+  next:
+    - when:
+        equals: { questionId: eventEntryCriteria, value: "Yes" }
+      targetId: eventCriteriaPublished
+
+- id: eventCriteriaPublished
+  domain: Participation & Access
+  question: If you set entry criteria, are they published in advance?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Partly", points: 2 }
+    - { text: "No", points: 4 }
+  appliesTo: [Event Owner / Promoter]
+  showIf:
+    equals: { questionId: eventEntryCriteria, value: "Yes" }
+
+- id: eventBundledRights
+  domain: Media & Data Rights
+  question: Do you sell rights for several events together as a package?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 4 }
+    - { text: "No", points: 0 }
+  appliesTo: [Event Owner / Promoter]
+
+# -------------------------
+# 7) Players’ Unions
+# -------------------------
+- id: unionCBAContext
+  domain: People & Mobility
+  question: When discussing pay or working terms with clubs or leagues, is this done within a formal collective bargaining process?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Sometimes", points: 2 }
+    - { text: "No", points: 4 }
+  appliesTo: ["Players' Union"]
+
+- id: unionAgentStandards
+  domain: Intermediaries
+  question: Do you set or recommend standards that affect agent fees or how agents can operate?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 3 }
+    - { text: "No", points: 0 }
+  appliesTo: ["Players' Union"]
+
+# -------------------------
+# 8) Athletes / Agents
+# -------------------------
+- id: agentAgreements
+  domain: Intermediaries
+  question: Do you use terms such as most-favoured conditions, non-solicitation, or non-compete in representation agreements?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 4 }
+    - { text: "No", points: 0 }
+  appliesTo: [Athlete / Agent]
+
+- id: agentsGroupActions
+  domain: Intermediaries
+  question: Have groups of agents ever agreed common fee levels or agreed not to approach certain clients?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 6 }
+    - { text: "No", points: 0 }
+  appliesTo: [Athlete / Agent]
+
+# -------------------------
+# 9) Refereeing / Officials Bodies
+# -------------------------
+- id: officialsEligibility
+  domain: Participation & Access
+  question: Are the criteria for appointing officials published and applied in a consistent way?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Partly", points: 2 }
+    - { text: "No", points: 4 }
+  appliesTo: [Refereeing Body]
+
+- id: officialsPayFramework
+  domain: People & Mobility
+  question: Are pay and assignment terms for officials set centrally for your competitions?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 3 }
+    - { text: "No", points: 0 }
+  appliesTo: [Refereeing Body]
+
+# -------------------------
+# 10) Academies / Training Centres
+# -------------------------
+- id: academyBindingPeriods
+  domain: People & Mobility
+  question: Do training or scholarship arrangements include minimum binding periods?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 3 }
+    - { text: "No", points: 0 }
+  appliesTo: [Academy / Training Centre]
+
+- id: academyTransparency
+  domain: People & Mobility
+  question: Are the terms for training compensation or release clearly set out for players and parents?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Partly", points: 2 }
+    - { text: "No", points: 3 }
+  appliesTo: [Academy / Training Centre]
+
+# -------------------------
+# 11) Venues / Stadium Operators
+# -------------------------
+- id: venueThirdPartyAccess
+  domain: Venues & Access
+  question: Can other organisers book the venue on fair terms when dates are available?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Sometimes", points: 2 }
+    - { text: "No", points: 5 }
+  appliesTo: [Venue / Stadium Operator]
+
+- id: venueInStadiumData
+  domain: Data & In-Venue Access
+  question: Do you limit which companies can collect live data or provide connectivity services during events?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 4 }
+    - { text: "No", points: 0 }
+  appliesTo: [Venue / Stadium Operator]
+
+# -------------------------
+# 12) Data / Analytics Providers
+# -------------------------
+- id: dataExclusivity
+  domain: Data & In-Venue Access
+  question: Do your customer contracts require them to use only your data for a competition or market?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 6 }
+    - { text: "No", points: 0 }
+  appliesTo: [Data / Analytics Provider]
+  next:
+    - when:
+        equals: { questionId: dataExclusivity, value: "Yes" }
+      targetId: dataNonExclusivePathways
+
+- id: dataNonExclusivePathways
+  domain: Data & In-Venue Access
+  question: If exclusivity is used, is there a route for others to access comparable data on clear terms?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Sometimes", points: 2 }
+    - { text: "No", points: 5 }
+  appliesTo: [Data / Analytics Provider]
+  showIf:
+    equals: { questionId: dataExclusivity, value: "Yes" }
+
+- id: dataVenueAccess
+  domain: Data & In-Venue Access
+  question: Can you collect live data in venues independently, or is access controlled by a single organisation?
+  kind: singleSelect
+  options:
+    - { text: "Independent access is possible", points: 0 }
+    - { text: "Access is controlled by one organisation", points: 5 }
+  appliesTo: [Data / Analytics Provider]
+
+# -------------------------
+# 13) Ticketing / Hospitality
+# -------------------------
+- id: ticketingExclusivePartner
+  domain: Fans & Ticketing
+  question: Do you have an exclusive primary or secondary ticketing partner?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 5 }
+    - { text: "No", points: 0 }
+  appliesTo: [Ticketing / Hospitality]
+  next:
+    - when:
+        equals: { questionId: ticketingExclusivePartner, value: "Yes" }
+      targetId: ticketingResalePolicy
+
+- id: ticketingResalePolicy
+  domain: Fans & Ticketing
+  question: If there is an exclusive partner, can fans resell or transfer tickets on other platforms?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Sometimes", points: 2 }
+    - { text: "No", points: 5 }
+  appliesTo: [Ticketing / Hospitality]
+  showIf:
+    equals: { questionId: ticketingExclusivePartner, value: "Yes" }
+
+# -------------------------
+# 14) Betting / Integrity Partners
+# -------------------------
+- id: integrityExclusiveData
+  domain: Data & In-Venue Access
+  question: Do agreements rely on a single source of “official” live data for betting markets?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 5 }
+    - { text: "No", points: 0 }
+  appliesTo: [Betting / Integrity Partner]
+
+- id: integrityInfoSharing
+  domain: Information Sharing
+  question: Do cooperation arrangements involve sharing information that is not publicly available about pricing or future plans?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 5 }
+    - { text: "No", points: 0 }
+  appliesTo: [Betting / Integrity Partner]
+
+# -------------------------
+# 15) Broadcast / Media / OTT
+# -------------------------
+- id: mediaJointBids
+  domain: Commercial Decisions
+  question: Do you coordinate bids with other media companies for the same rights packages?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 6 }
+    - { text: "No", points: 0 }
+  appliesTo: [Broadcast / Media / OTT]
+
+- id: mediaMostFavouredTerms
+  domain: Contracts
+  question: Do your contracts ask for “most-favoured” or parity terms across platforms or territories?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 4 }
+    - { text: "No", points: 0 }
+  appliesTo: [Broadcast / Media / OTT]
+
+# -------------------------
+# 16) Sponsorship / Marketing Agencies
+# -------------------------
+- id: agencyRepMultipleRightsHolders
+  domain: Commercial Decisions
+  question: Do you sell sponsorship on behalf of multiple competing rights holders at the same time?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 4 }
+    - { text: "No", points: 0 }
+  appliesTo: [Sponsorship / Marketing Agency]
+
+- id: agencyCategoryExclusivity
+  domain: Contracts
+  question: Do sponsorship packages include category exclusivity that prevents rival brands from working with the same property?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 3 }
+    - { text: "No", points: 0 }
+  appliesTo: [Sponsorship / Marketing Agency]
+
+# -------------------------
+# 17) Merchandising / Licensing
+# -------------------------
+- id: merchPooledLicensing
+  domain: IP & Licensing
+  question: Do you license products using a pooled or central programme across multiple rights holders?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 3 }
+    - { text: "No", points: 0 }
+  appliesTo: [Merchandising / Licensing]
+
+- id: merchTerritorialExclusivity
+  domain: IP & Licensing
+  question: Do licensees receive exclusive territories for certain product lines?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 3 }
+    - { text: "No", points: 0 }
+  appliesTo: [Merchandising / Licensing]
+
+# -------------------------
+# 18) Technology Platforms
+# -------------------------
+- id: techPlatformExclusivity
+  domain: Platforms & Access
+  question: Do agreements with partners limit their ability to offer similar services on other platforms?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 4 }
+    - { text: "No", points: 0 }
+  appliesTo: [Technology Platform]
+
+- id: techAPIAccess
+  domain: Platforms & Access
+  question: If you provide an API or data feed, are access terms published and available on the same basis to comparable users?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Partly", points: 2 }
+    - { text: "No", points: 4 }
+  appliesTo: [Technology Platform]
+
+# -------------------------
+# 19) Esports Organisations
+# -------------------------
+- id: esportsEventApproval
+  domain: Participation & Access
+  question: Do you approve third-party tournaments or team participation in your game ecosystem?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 5 }
+    - { text: "No", points: 0 }
+  appliesTo: [Esports Organisation]
+
+- id: esportsRightsSales
+  domain: Media & Data Rights
+  question: Are media or data rights for competitions in your ecosystem sold centrally?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 6 }
+    - { text: "No", points: 0 }
+    - { text: "A mix of both approaches", points: 3 }
+  appliesTo: [Esports Organisation]
+  next:
+    - when:
+        any:
+          - equals: { questionId: esportsRightsSales, value: "Yes" }
+          - equals: { questionId: esportsRightsSales, value: "A mix of both approaches" }
+      targetId: esportsAccessForOthers
+
+- id: esportsAccessForOthers
+  domain: Participation & Access
+  question: If rights or events are centralised, is there a published way for others to propose tournaments or content partnerships?
+  kind: singleSelect
+  options:
+    - { text: "Yes", points: 0 }
+    - { text: "Sometimes", points: 2 }
+    - { text: "No", points: 5 }
+  appliesTo: [Esports Organisation]
+  showIf:
+    any:
+      - equals: { questionId: esportsRightsSales, value: "Yes" }
+      - equals: { questionId: esportsRightsSales, value: "A mix of both approaches" }
