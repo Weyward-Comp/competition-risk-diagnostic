@@ -1,15 +1,16 @@
 # app.py — Streamlit web app for the Competition Risk Diagnostic
-# Put this file in the repo root with: engine.py, rules.yaml, pdf_builder.py, docx_builder.py
+# Requires: engine.py, rules.yaml, pdf_builder.py, docx_builder.py in the repo root.
 
 import json, streamlit as st
 from datetime import datetime
 from pathlib import Path
 import importlib.util, sys
 
-# -------- Optional access code (set ACCESS_CODE in Streamlit Secrets to enable) --------
+# -------- Page config --------
+st.set_page_config(page_title="Competition Risk Diagnostic", page_icon="🧭", layout="wide")
+
+# -------- Optional access code: add ACCESS_CODE in Streamlit Secrets to enable --------
 if st.secrets.get("ACCESS_CODE"):
-    st.set_page_config(page_title="Competition Risk Diagnostic", page_icon="🧭", layout="wide")
-    st.title("Competition Risk Diagnostic")
     code = st.text_input("Enter access code", type="password")
     if code != st.secrets["ACCESS_CODE"]:
         st.stop()
@@ -20,9 +21,11 @@ engine = importlib.util.module_from_spec(spec)
 sys.modules["engine_core"] = engine
 spec.loader.exec_module(engine)
 
-# -------- Page settings / light CSS --------
-st.set_page_config(page_title="Competition Risk Diagnostic", page_icon="🧭", layout="wide")
-st.markdown("""<style>.stRadio [role=radiogroup] label{font-weight:500}</style>""", unsafe_allow_html=True)
+# -------- Light CSS --------
+st.markdown(
+    "<style>.stRadio [role=radiogroup] label{font-weight:500}</style>",
+    unsafe_allow_html=True,
+)
 
 st.title("Competition Risk Diagnostic")
 st.caption("Answer a short set of neutral questions. Download your PDF dashboard and editable Word report at the end.")
@@ -133,4 +136,58 @@ if st.session_state.current_id:
         elif kind == "text":
             val = st.text_input("Your answer")
             submitted = st.form_submit_button("Next")
-            if sub
+            if submitted:
+                st.session_state.answers[block["id"]] = val
+                _record_item(block["id"], dom, block["question"], val, 0)
+                st.session_state.asked.add(block["id"])
+                _next_question(block)
+
+        else:  # singleSelect (default)
+            labels = [o["text"] for o in opts] if opts else []
+            val = st.radio("Choose one", labels if labels else ["(Type a free text answer below)"], index=0)
+            freetext = st.text_input("Your answer") if not labels else ""
+            submitted = st.form_submit_button("Next")
+            if submitted:
+                ans_text = freetext if not labels else val
+                st.session_state.answers[block["id"]] = ans_text
+                pts = 0 if not labels else next((int(o.get("points", 0)) for o in opts if o["text"] == val), 0)
+                st.session_state.domain_scores[dom] = st.session_state.domain_scores.get(dom, 0) + pts
+                if block["id"] == "entityType":
+                    st.session_state.entity_type = ans_text
+                _record_item(block["id"], dom, block["question"], ans_text, pts)
+                st.session_state.asked.add(block["id"])
+                _next_question(block)
+
+    # progress bar
+    st.progress(min(1.0, len(st.session_state.asked) / max(1, len(st.session_state.order))))
+
+else:
+    # Finished
+    st.success("All done — download your reports below.")
+    data = _build_payload()
+
+    import pdf_builder as pdfb
+    import docx_builder as docxb
+
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        pdf_bytes = pdfb.build_pdf_bytes(data)
+        st.download_button("⬇️ Download PDF dashboard",
+                           data=pdf_bytes, file_name="report.pdf", mime="application/pdf")
+    with col2:
+        docx_bytes = docxb.build_docx_bytes(data)
+        st.download_button("⬇️ Download Word report",
+                           data=docx_bytes,
+                           file_name="report.docx",
+                           mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    with col3:
+        st.download_button("⬇️ Download JSON (debug)",
+                           data=json.dumps(data, indent=2),
+                           file_name="report.json",
+                           mime="application/json")
+
+    if st.button("Start another response"):
+        for k in list(st.session_state.keys()):
+            del st.session_state[k]
+        if _rerun:
+            _rerun()
